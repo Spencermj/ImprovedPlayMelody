@@ -21,15 +21,15 @@ You will need Pyechonest to use PlayMelody.py.
 
 1. [Free Sound]
 
-3. [Extracting Melody]
+2. [Extracting Melody]
 
-5. [Recurse Through Directory]
+3. [Recurse Through Directory]
 
-6. [Python Audio]
+4. [Echonest]
 
-7. [Echonest]
+5. [PyPitch]
 
-
+6. [Jehan On Timbre]
 **How To Mimic A Melody**
 
 To run PlayMelody.py, the user must enter the location of the song they wish to be analyzed (the simpler the melody the better), the name of the output file, and the directory containing the 12 semitones from the chosen instrument. The following command will create a .mp3 file containing the melody of Happy Birthday:
@@ -61,7 +61,7 @@ def _isAudio(f):
     return ext in AUDIO_EXTENSIONS
 ```
 
-After the semitones have been added to a list, they are run through the addOctave() function. The following methods take the total list of pitches, the list of semitones, and the desired shift in octave as paramaters and adds all the semitones in the desired octave to the total list of pitches:
+After the semitones have been added to a list, they are run through the addOctave() function. This function originally used the [Modify] module to shift the octave of a note, but this is impossible now that the module returns an error for all users. To fix this problem, however, Jessie Sykes reverse-engineered SoundTouch's pitch shifting functions. Using Jessie's shiftPitchOctaves() function from [PyPitch], I can shift the octave of any given note. The following methods take the total list of pitches, the list of semitones, and the desired shift in octave as paramaters and adds all the semitones in the desired octave to the total list of pitches:
 
 ```python
 def addOctave(semitones, octaves, noteList):
@@ -69,12 +69,17 @@ def addOctave(semitones, octaves, noteList):
         changeOneNoteOctave(note, noteList, octaves)
 
 def changeOneNoteOctave(note, noteList, octaves):
-    soundtouch = modify.Modify()
-    new_note = soundtouch.shiftPitchOctaves(note, octaves)
-    noteList.append(new_note)
-```
+    new_note = shiftPitchOctaves(note.render().data, octaves)
+    dat = audio.AudioData(ndarray = new_note, shape = new_note.shape, numChannels = new_note.shape[1], sampleRate = 44100)
+    noteList.append(dat.render())
 
-JESSIES CODE
+def shiftPitchOctaves(audio_data, octaves): 
+        factor = 2.0 ** octaves
+        stretched_data = dirac.timeScale(audio_data, factor)
+        index = numpy.floor(numpy.arange(0, stretched_data.shape[0], factor)).astype('int32')
+        new_data = stretched_data[index]
+        return new_data
+```
 
 In the .wav file containing the pitch A from [Free Sound], the frequency is 220 Hz, this means the 4 octaves above and the 3 octaves below this semitone must be added to span the entire range of an 88-key piano. After pitch shifting up 3 octaves and down 2 octaves, the sound quality of the piano notes begins to drastically drop so highest and lowest octave were left out. This doesn't prove to be a problem considering the majority of songs tend to stay within a smaller range of notes. The following code adds the 2 octaves below and the 3 octaves above the given pitches to the list of total pitches:
 
@@ -106,22 +111,47 @@ def initNoteList(notes):
 
 Finally, once the total list of pitches has been created, the program uses them to create the melody of the chosen song. The program iterates through the first row of notes to find the closest matching semitone and then records the index of the collumn. After finding the best matching pitch, the program then iterates through the collumn containing the closest matching semitone to find which octave best matches the song. I decided to model my note list this way in order to cut down on the time it takes to find the best matching note, this reduces the number of elements analyzed in every segment of the song from 72 to 18, saving a large amount of time in the long run.
 
-After some research, I found [Jehan On Timbre] in which Tristan Jehan mentions that the second index of the timbre vector is closely related to frequency. After experimenting with the timbre vector, I found that comparing the second index of the timbre vector in each note to the same index in the timbre vector of the audiofile we wish to mimic serves as an excellent way of finding the appropriate octave. The following code finds the piano note that best matches the current note in the desired song:
+After some research, I found [Jehan On Timbre] in which Tristan Jehan mentions that the second index of the timbre vector is closely related to frequency. After experimenting with the timbre vector, I found that comparing the second index of the timbre vector in each note to the same index in the timbre vector of the audiofile we wish to mimic serves as an excellent way of finding the appropriate octave. The following code finds the piano note that best matches the current note in the desired song before matching the duration and encoding the file as a .mp3:
 
 ```python
-for i in range(len(songPitches)):
-        for j in range(len(noteList)):
-            notePitches = noteList[j].pitches
-            dist = distFinder.cosine(songPitches[i], notePitches[0]) 
-            if dist < bmd:
-                bmd = dist
-                bmi = j
-        collect.append(noteList[bmi])
-  out = audio.assemble(collect)
-  out.encode(output_filename)
+for i in range(len(songSegments)):
+    for j in range(12):
+        noteSegments = noteList[0][j].analysis.segments
+        pDist = distFinder.cosine(songSegments[i].pitches, noteSegments[len(noteSegments) / 2].pitches)
+        if pDist < bmp:
+            bmp = pDist
+            bmpi = j
+    for k in range(6):
+        noteSegments = noteList[k][bmpi].analysis.segments
+        tDist = distFinder.cosine(songSegments[i].timbre[1], noteSegments[len(noteSegments) / 2].timbre[1])
+        if tDist < bmt:
+            bmt = tDist
+            bmti = k 
+    print str(i / len(songSegments)) + '%'
+    matchDuration(noteList[bmti][bmpi].analysis.segments, songSegments[i], collect)
+    bmp = 10000.0
+    bmt = 10000.0
+out = audio.assemble(collect)
+out.encode(output_filename)
 ```
 
-MATCHDURATION
+After finding the best matching note for a particular segment, the program calls the matchDuration() function to iterate through the segments of the note and match their duration to the song segment. Considering a number higher than 1 lowers the tempo and a number lower than 1 raises the tempo, it's simple enough to set a ratio for how much to shift the note's tempo by dividing the duration of the song segment by the duration of the note segment. It's important to note that dirac can't timescale by a ratio of less than .5, so each note is tripled in length. The resulting melody is played back slower than in the original song but it is still fairly clear, this problem can be easily fixed in the future. The following code takes the segments of a note, matches their duration to the duration of a song segment, and appends the resulting AudioData to an AudioQuantumList():
+
+```python
+def matchDuration(note, songseg, end):
+    ratio = 3 * songseg.duration / note.duration
+    print ratio
+    for seg in note:
+        seg_audio = seg.render()
+        scaled_seg = dirac.timeScale(seg_audio.data, ratio)
+        ts = audio.AudioData(ndarray=scaled_seg, shape=scaled_seg.shape,
+                    sampleRate=44100, numChannels=scaled_seg.shape[1])
+        end.append(ts)
+```
+
+**Where To Go From Here**
+
+At the moment, the program lacks the precision to match every note of a melody. The notes are being matched by segment, but some segments of the song contain two or three notes, making it so that the .mp3 output by the program only matches around half the notes in the melody. The output of the program still sounds like the original song but it sounds more like it is playing along harmonically than trying to mimic the melody. The notes that are being chosen for each segment of the song sound correct, so by accounting for the onset and offset of notes, it should be possible to fairly accurately match the melody of the sound.
 
 [Modify]: http://echonest.github.io/remix/apidocs/echonest.remix.modify.Modify-class.html
 [Free Sound]: http://www.freesound.org/people/pinkyfinger/packs/4409/

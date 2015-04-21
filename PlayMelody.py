@@ -14,8 +14,6 @@ def main(directory, inputfile_name, output_filename):
     #createAllNotes()
     initNoteList(noteList)
     print len(noteList)
-    #for i in range(len(noteList)):
-    #    print noteList[i][11].analysis.segments.timbre
     print noteList[0][0].analysis.segments.timbre
     audiofile = audio.LocalAudioFile(input_filename)
     songSegments = audiofile.analysis.segments
@@ -24,8 +22,7 @@ def main(directory, inputfile_name, output_filename):
     bmt = 10000.0
     bmti = 0
     print len(songSegments)
-    #for i in range(len(songSegments)):
-    for i in range(50):
+    for i in range(len(songSegments)):
         for j in range(12):
             noteSegments = noteList[0][j].analysis.segments
             pDist = distFinder.cosine(songSegments[i].pitches, noteSegments[len(noteSegments) / 2].pitches)
@@ -40,21 +37,12 @@ def main(directory, inputfile_name, output_filename):
                 bmti = k 
         print i
         matchDuration(noteList[bmti][bmpi].analysis.segments, songSegments[i], collect)
-        #collect.append(semitones[bmi])
         bmp = 10000.0
         bmt = 10000.0
-        #collect.append(noteList[bmi[0][bmi[1]].segments[len(noteList[bmi].analysis.segments)/2])
-    #matchDuration(collect, songSegments, collect) 
     out = audio.assemble(collect)
     out.encode(output_filename)
     
 def matchDuration(note, songseg, end):
-    '''factor = songseg.duration / noteseg.duration
-    stretched_data = dirac.timeScale(noteseg, factor)
-    index = numpy.floor(numpy.arange(0, stretched_data.shape[0], factor)).astype('int32')
-    new_data = stretched_data[index]
-    return new_data
- '''
     ratio = 3 * songseg.duration / note.duration
     print ratio
     for seg in note:

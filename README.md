@@ -30,6 +30,7 @@ You will need Pyechonest to use PlayMelody.py.
 5. [PyPitch]
 
 6. [Jehan On Timbre]
+
 **How To Mimic A Melody**
 
 To run PlayMelody.py, the user must enter the location of the song they wish to be analyzed (the simpler the melody the better), the name of the output file, and the directory containing the 12 semitones from the chosen instrument. The following command will create a .mp3 file containing the melody of Happy Birthday:
@@ -61,7 +62,7 @@ def _isAudio(f):
     return ext in AUDIO_EXTENSIONS
 ```
 
-After the semitones have been added to a list, they are run through the addOctave() function. This function originally used the [Modify] module to shift the octave of a note, but this is impossible now that the module returns an error for all users. To fix this problem, however, Jessie Sykes reverse-engineered SoundTouch's pitch shifting functions. Using Jessie's shiftPitchOctaves() function from [PyPitch], I can shift the octave of any given note. The following methods take the total list of pitches, the list of semitones, and the desired shift in octave as paramaters and adds all the semitones in the desired octave to the total list of pitches:
+After the semitones have been added to a list, they are run through the addOctave() function. This function originally used the SoundTouch module to shift the octave of a note, but this is impossible now that the module returns an error for all users. To fix this problem, however, Jessie Sykes reverse-engineered SoundTouch's pitch shifting functions. Using Jessie's shiftPitchOctaves() function from [PyPitch], I can shift the octave of any given note. The following methods take the total list of pitches, the list of semitones, and the desired shift in octave as paramaters and adds all the semitones in the desired octave to the total list of pitches:
 
 ```python
 def addOctave(semitones, octaves, noteList):
@@ -153,13 +154,10 @@ def matchDuration(note, songseg, end):
 
 At the moment, the program lacks the precision to match every note of a melody. The notes are being matched by segment, but some segments of the song contain two or three notes, making it so that the .mp3 output by the program only matches around half the notes in the melody. The output of the program still sounds like the original song but it sounds more like it is playing along harmonically than trying to mimic the melody. The notes that are being chosen for each segment of the song sound correct, so by accounting for the onset and offset of notes, it should be possible to fairly accurately match the melody of the sound.
 
-[Modify]: http://echonest.github.io/remix/apidocs/echonest.remix.modify.Modify-class.html
 [Free Sound]: http://www.freesound.org/people/pinkyfinger/packs/4409/
 [Recurse Through Directory]: https://github.com/echonest/pyechonest/blob/master/examples/show_attrs.py
 [Python Audio]: https://wiki.python.org/moin/Audio/
 [Echonest]: http://the.echonest.com/
 [Extracting Melody]: http://perso.telecom-paristech.fr/~grichard/Publications/2013-Salomon-SigMag.pdf
-[Chord Probabilities]: http://bengio.abracadoudou.com/cv/publications/pdf/paiement_2005_ismir.pdf
-[Molecular Music Box]: https://www.youtube.com/watch?v=3Z8CuAC_-bg
-[Wolfram Tones]: http://tones.wolfram.com/about/
 [Jehan On Timbre]: https://developer.echonest.com/forums/thread/794
+[PyPitch]: https://github.com/sykesjd/echonest-research/tree/master/pypitch

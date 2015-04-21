@@ -3,7 +3,7 @@
 
 **What It Does**
 
-PlayMelody.py uses a directory containing an octave of semitones from one instrument and uses the sound clips to recreate the melody of a simple song. I was able to find .wav files of the 12 semitones from a single octave at [Free Sound], I added these to a directory and pass the directory into the paramaters upon execution of PlayMelody.py. From these semitones, my program creates a list of every note on a piano; to do this it first fills the list with each of the semitones, it then shifts the octave multiples times both up and down to capture the entire range of the piano. After this note list has been created, the program takes the song entered as a paramater and finds the euclidean distance between each pitch in the song and each sample pitch, appending the closest sample pitch to a new list and then encoding it as an audio file.
+PlayMelody.py uses a directory containing an octave of semitones from a piano and uses the sound clips to recreate the melody of a simple song. I was able to find .wav files of the 12 semitones from a single octave at [Free Sound], I added these to a directory and pass the directory into the paramaters upon execution of PlayMelody.py. From these semitones, my program creates a list of every note on a piano; to do this it first fills the list with each of the semitones, it then shifts the octave multiples times both up and down to capture the entire range of the piano. After a list of every note has been created, the program takes the song entered as a paramater and uses both pitch and timbre to find the closest matching note. After the most similar piano note has been found, it is tempo shifted to match the duration of the segment of the song that it is mimicking.
 
 **How Did I Come Up With This Idea?**
 
@@ -11,11 +11,7 @@ As I was thinking of ideas for other research modules and my final project, I re
 
 **What Problem Does It Solve?**
 
-The completion of this program opens up a variety of possibilities for what I can do next. Now that I have a way to generate any note given a directory, I can accomplish multiple programs that I had in mind. One of the most obvious things I can do is expand on this specific project even more and mimic the melody from a much more complex song. [Extracting Melody] goes in depth on how to use fourier transformations to extract not only the melody, but also the rythm and the bass of a song. At the moment, my code can only mimic simple melodies, but I could use this resource to expand on my program and fix its shortcomings.
-
-Another idea that could be accomplished now that I can generate notes is a simple chord progression. [Chord Probabilities] goes in depth on how to find the probability that any one chord will follow any other chord. By using this information, I can shift 4 notes and play them simulatenously to create a chord, use the probabilities to find a chord that would most likely sound good following the previous chord, and then repeat with some sort of randomized rythm.
-
-Finally, I could make use of these notes to create a basic song based off of cellular automata. In a fashion similar to [Wolfram Tones] or [Molecular Music Box], I could experiment with simple patterns to create naturally complex songs. Cellular automata is an incredibly interesting way to create music because it makes use of analyzing simple patterns in life and using those to create an end product that is much more complex than the pattern that created it. Now that I can generate notes, I can simulate any instrument and use Stephen Wolfram's research to create generative music.
+The completion of this program opens up a variety of possibilities for what I can do next. Now that I have a working product, I can begin to expand on my program to allow it to recreate more complex melodies. At the moment, my code can only mimic simple melodies, but it shows the potetntial to achieve more than that. [Extracting Melody] goes in depth on how to use fourier transformations to pull the melody, rythm, and bass of a song apart. By using fourier transformations to extract the melody, I would have much more accurate information about the semitones that are played. 
 
 **Dependencies**
 
@@ -73,7 +69,7 @@ def _isAudio(f):
     return ext in AUDIO_EXTENSIONS
 ```
 
-After the semitones have been added to a list, they are run through the . The following methods take the total list of pitches, the list of semitones, and the desired shift in octave as paramaters and adds all the semitones in the desired octave to the total list of pitches:
+After the semitones have been added to a list, they are run through the addOctave() function. The following methods take the total list of pitches, the list of semitones, and the desired shift in octave as paramaters and adds all the semitones in the desired octave to the total list of pitches:
 
 ```python
 def addOctave(semitones, octaves, noteList):
@@ -87,19 +83,35 @@ def changeOneNoteOctave(note, noteList, octaves):
 ```
 
 
-In the .wav file containing the pitch A from [Free Sound], the frequency is 220 Hz, this the 4 octaves above and the 3 octaves below this semitone must be added to span the entire range of an 88-key piano. The following code adds the 3 octaves below and the 4 octaves above the given pitches to the list of total pitches:
+In the .wav file containing the pitch A from [Free Sound], the frequency is 220 Hz, this means the 4 octaves above and the 3 octaves below this semitone must be added to span the entire range of an 88-key piano. After pitch shifting up 3 octaves and down 2 octaves, the sound quality of the piano notes begins to drastically drop so highest and lowest octave were left out. This doesn't prove to be a problem considering the majority of songs tend to stay within a smaller range of notes. The following code adds the 2 octaves below and the 3 octaves above the given pitches to the list of total pitches:
+
+After being loaded into a list, these notes are all in the form of AudioData objects; due to this, there is no way to get the analysis to find the pitch and timbre from each note. To solve this, the program uploads the notes to Echonest and saves them in a local directory. After the directory of all notes has been created, the line where createAllNotes() is called can be commented out to save a great deal of time upon every execution of the program. The following code loads the semitones from the given directory into an AudioQuantumList, uses them to fill the list with the range of pitches, and then saves them locally as '0.mp3' through '71.mp3':
 
 ```python
-for note in semitones:
-        noteList.append(note)
-    for i in range(1,4):
-        addOctave(semitones, i, noteList)
+def createAllNotes():
+    allNotes =  audio.AudioQuantumList()
+    semitones = audio.AudioQuantumList()
+    createSemitones(directory, semitones)
+    for i in range(4):
+        addOctave(semitones, i, allNotes)
     for i in range(1,3):
-        addOctave(semitones, i*-1, noteList)
+        addOctave(semitones, i*-1, allNotes)
+    for i in range(len(allNotes)):
+        note = audio.AudioQuantumList()
+        note.append(allNotes[i])
+        out = audio.assemble(note)
+        out.encode(str(i) + ".mp3")
 ```
 
+After creating all the notes, the program must then load them into an array to be analyzed. The LocalAudioFiles are added to the array with each row containing an octave and each collumn containing all the pitches of a certain note. The following code runs through the directory that the notes were saved in (AllNotes) and loads them into a 2D-array
 
-Finally, once the total list of pitches has been created, the program uses them to create the melody of the chosen song. For each pitch in the song, the program determines the most similar pitch and appends that to a list. Once the song has been fully analyzed, the list is encoded as a .mp3 with the chosen name. The following code iterates through the pitches of a song and recreates the melody:
+```python
+def initNoteList(notes):
+    for i in range(72):
+        notes[i/12][i%12] = audio.LocalAudioFile("AllNotes/" + str(i) + ".mp3")
+```
+
+Finally, once the total list of pitches has been created, the program uses them to create the melody of the chosen song. The program iterates through the first row of the.  Once the song has been fully analyzed, the list is encoded as a .mp3 with the chosen name. The following code iterates through the pitches of a song and recreates the melody:
 
 ```python
 for i in range(len(songPitches)):

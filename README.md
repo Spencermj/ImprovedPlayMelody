@@ -21,21 +21,13 @@ You will need Pyechonest to use PlayMelody.py.
 
 1. [Free Sound]
 
-2. [Modify]
-
 3. [Extracting Melody]
-
-4. [Chord Probabilities]
 
 5. [Recurse Through Directory]
 
 6. [Python Audio]
 
 7. [Echonest]
-
-8. [Molecular Music Box]
-
-9. [Wolfram Tones]
 
 
 **How To Mimic A Melody**
@@ -82,6 +74,7 @@ def changeOneNoteOctave(note, noteList, octaves):
     noteList.append(new_note)
 ```
 
+JESSIES CODE
 
 In the .wav file containing the pitch A from [Free Sound], the frequency is 220 Hz, this means the 4 octaves above and the 3 octaves below this semitone must be added to span the entire range of an 88-key piano. After pitch shifting up 3 octaves and down 2 octaves, the sound quality of the piano notes begins to drastically drop so highest and lowest octave were left out. This doesn't prove to be a problem considering the majority of songs tend to stay within a smaller range of notes. The following code adds the 2 octaves below and the 3 octaves above the given pitches to the list of total pitches:
 
@@ -111,7 +104,9 @@ def initNoteList(notes):
         notes[i/12][i%12] = audio.LocalAudioFile("AllNotes/" + str(i) + ".mp3")
 ```
 
-Finally, once the total list of pitches has been created, the program uses them to create the melody of the chosen song. The program iterates through the first row of the.  Once the song has been fully analyzed, the list is encoded as a .mp3 with the chosen name. The following code iterates through the pitches of a song and recreates the melody:
+Finally, once the total list of pitches has been created, the program uses them to create the melody of the chosen song. The program iterates through the first row of notes to find the closest matching semitone and then records the index of the collumn. After finding the best matching pitch, the program then iterates through the collumn containing the closest matching semitone to find which octave best matches the song. I decided to model my note list this way in order to cut down on the time it takes to find the best matching note, this reduces the number of elements analyzed in every segment of the song from 72 to 18, saving a large amount of time in the long run.
+
+After some research, I found [Jehan On Timbre] in which Tristan Jehan mentions that the second index of the timbre vector is closely related to frequency. After experimenting with the timbre vector, I found that comparing the second index of the timbre vector in each note to the same index in the timbre vector of the audiofile we wish to mimic serves as an excellent way of finding the appropriate octave. The following code finds the piano note that best matches the current note in the desired song:
 
 ```python
 for i in range(len(songPitches)):
@@ -126,6 +121,7 @@ for i in range(len(songPitches)):
   out.encode(output_filename)
 ```
 
+MATCHDURATION
 
 [Modify]: http://echonest.github.io/remix/apidocs/echonest.remix.modify.Modify-class.html
 [Free Sound]: http://www.freesound.org/people/pinkyfinger/packs/4409/
@@ -136,3 +132,4 @@ for i in range(len(songPitches)):
 [Chord Probabilities]: http://bengio.abracadoudou.com/cv/publications/pdf/paiement_2005_ismir.pdf
 [Molecular Music Box]: https://www.youtube.com/watch?v=3Z8CuAC_-bg
 [Wolfram Tones]: http://tones.wolfram.com/about/
+[Jehan On Timbre]: https://developer.echonest.com/forums/thread/794

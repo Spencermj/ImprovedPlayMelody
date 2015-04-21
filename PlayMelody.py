@@ -21,7 +21,7 @@ def main(directory, inputfile_name, output_filename):
     bmpi = 0
     bmt = 10000.0
     bmti = 0
-    print len(songSegments)
+    #print len(songSegments)
     for i in range(len(songSegments)):
         for j in range(12):
             noteSegments = noteList[0][j].analysis.segments
@@ -35,7 +35,7 @@ def main(directory, inputfile_name, output_filename):
             if tDist < bmt:
                 bmt = tDist
                 bmti = k 
-        print i
+        print str(i / len(songSegments)) + '%'
         matchDuration(noteList[bmti][bmpi].analysis.segments, songSegments[i], collect)
         bmp = 10000.0
         bmt = 10000.0
